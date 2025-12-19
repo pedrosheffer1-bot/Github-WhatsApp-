@@ -4,6 +4,7 @@ import qrcode from 'qrcode-terminal';
 import { GoogleGenAI } from "@google/genai";
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 
 dotenv.config();
 
@@ -49,10 +50,26 @@ EXEMPLO DE RESPOSTA:
 ✅ Finance Other Eyes: Registro de R$ 150,00 em Gastronomia efetuado. Sua gestão patrimonial permanece impecável. 🥂
 `;
 
+/**
+ * CONFIGURAÇÃO ESPECÍFICA PARA TERMUX (ANDROID)
+ * Verifica se o Chromium do Termux existe. Se sim, usa ele.
+ * Caso contrário, deixa o Puppeteer tentar usar o padrão (Windows/Linux PC).
+ */
+const termuxChromiumPath = '/data/data/com.termux/files/usr/bin/chromium-browser';
+const isTermux = fs.existsSync(termuxChromiumPath);
+
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
     puppeteer: {
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        // Se estiver no Termux, usa o caminho do sistema. Senão, undefined (usa o bundled).
+        executablePath: isTermux ? termuxChromiumPath : undefined,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage', // Vital para evitar crash de memória no celular
+            '--disable-gpu',           // Aceleração de hardware costuma falhar em headless no Termux
+            '--disable-extensions'
+        ],
         handleSIGINT: false,
     }
 });
@@ -67,6 +84,7 @@ client.on('qr', (qr) => {
 client.on('ready', () => {
     console.log('\n--------------------------------------------');
     console.log('✅ Finance Other Eyes: Conectado com Sucesso!');
+    if (isTermux) console.log('📱 Rodando em modo Otimizado para Termux');
     console.log('--------------------------------------------\n');
 });
 
