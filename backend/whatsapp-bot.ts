@@ -59,23 +59,12 @@ const termuxChromiumPath = '/data/data/com.termux/files/usr/bin/chromium-browser
 const isTermux = fs.existsSync(termuxChromiumPath);
 
 const client = new Client({
-    authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
     puppeteer: {
-        executablePath: isTermux ? termuxChromiumPath : undefined,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process', // Importante para evitar travamentos no Termux
-            '--disable-extensions'
-        ],
-        headless: true,
-        handleSIGINT: false,
+        executablePath: '/usr/bin/chromium-browser',
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
     }
 });
+
 
 const logger = (msg: string) => console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
 
