@@ -10,14 +10,16 @@ dotenv.config();
 
 /**
  * CONFIGURAÇÃO FIREBASE
- * Certifique-se de que o arquivo serviceAccountKey.json esteja na raiz do backend
- * ou as variáveis de ambiente devidamente configuradas.
  */
 if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.applicationDefault(), // Ou path para serviceAccountKey.json
-        databaseURL: process.env.FIREBASE_DATABASE_URL
-    });
+    try {
+        admin.initializeApp({
+            credential: admin.credential.applicationDefault(), 
+            databaseURL: process.env.FIREBASE_DATABASE_URL
+        });
+    } catch (e) {
+        console.error("Erro ao iniciar Firebase. Verifique suas credenciais.", e);
+    }
 }
 const db = admin.firestore();
 
@@ -52,8 +54,6 @@ EXEMPLO DE RESPOSTA:
 
 /**
  * CONFIGURAÇÃO ESPECÍFICA PARA TERMUX (ANDROID)
- * Verifica se o Chromium do Termux existe. Se sim, usa ele.
- * Caso contrário, deixa o Puppeteer tentar usar o padrão (Windows/Linux PC).
  */
 const termuxChromiumPath = '/data/data/com.termux/files/usr/bin/chromium-browser';
 const isTermux = fs.existsSync(termuxChromiumPath);
@@ -61,15 +61,18 @@ const isTermux = fs.existsSync(termuxChromiumPath);
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
     puppeteer: {
-        // Se estiver no Termux, usa o caminho do sistema. Senão, undefined (usa o bundled).
         executablePath: isTermux ? termuxChromiumPath : undefined,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage', // Vital para evitar crash de memória no celular
-            '--disable-gpu',           // Aceleração de hardware costuma falhar em headless no Termux
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process', // Importante para evitar travamentos no Termux
             '--disable-extensions'
         ],
+        headless: true,
         handleSIGINT: false,
     }
 });
@@ -84,7 +87,7 @@ client.on('qr', (qr) => {
 client.on('ready', () => {
     console.log('\n--------------------------------------------');
     console.log('✅ Finance Other Eyes: Conectado com Sucesso!');
-    if (isTermux) console.log('📱 Rodando em modo Otimizado para Termux');
+    if (isTermux) console.log('📱 Modo Termux Mobile Ativado');
     console.log('--------------------------------------------\n');
 });
 
@@ -122,7 +125,6 @@ async function processInput(message: string, isAudio = false, audioBase64?: stri
             const data = JSON.parse(jsonMatch[1]);
             const cleanFeedback = output.replace(jsonMatch[0], "").trim();
 
-            // Persistência no Firestore
             await db.collection('transactions').add({
                 ...data,
                 source: isAudio ? 'whatsapp_audio' : 'whatsapp_text',
@@ -142,7 +144,6 @@ async function processInput(message: string, isAudio = false, audioBase64?: stri
 client.on('message', async (msg: WAMessage) => {
     if (msg.fromMe) return;
 
-    // Detecção de Áudio
     if (msg.hasMedia && (msg.type === 'audio' || msg.type === 'ptt')) {
         logger('Processando áudio recebido...');
         try {
@@ -153,7 +154,6 @@ client.on('message', async (msg: WAMessage) => {
             logger('Falha ao baixar mídia.');
         }
     } 
-    // Detecção de Texto
     else if (msg.body) {
         logger(`Processando texto de ${msg.from}`);
         const feedback = await processInput(msg.body);

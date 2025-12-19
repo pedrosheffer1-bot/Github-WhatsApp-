@@ -5,8 +5,8 @@
   "description": "WhatsApp Bot Backend for Finance Pro AI",
   "main": "whatsapp-bot.ts",
   "scripts": {
-    "start": "ts-node whatsapp-bot.ts",
-    "dev": "ts-node-dev --respawn whatsapp-bot.ts"
+    "start": "npx ts-node whatsapp-bot.ts",
+    "dev": "npx ts-node-dev --respawn whatsapp-bot.ts"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
