@@ -98,6 +98,7 @@ client.on('ready', () => {
     console.log('\n--------------------------------------------');
     console.log('✅ Finance Pro AI: Conectado e Operacional!');
     if (isTermux) console.log('📱 Modo Termux Mobile: Ativado e Otimizado');
+    console.log('👉 Agora envie uma mensagem para você mesmo no WhatsApp para testar.');
     console.log('--------------------------------------------\n');
 });
 
@@ -161,27 +162,36 @@ async function processInput(message: string, isAudio = false, audioBase64?: stri
 
 // --- HANDLER DE MENSAGENS ---
 
-client.on('message', async (msg: WAMessage) => {
-    if (msg.fromMe) return; // Ignora mensagens enviadas por você mesmo (pode remover se quiser usar como 'anotações')
+// Usamos 'message_create' para pegar mensagens enviadas por NÓS mesmos (anotações pessoais)
+client.on('message_create', async (msg: WAMessage) => {
+    
+    // 1. Evita Loop Infinito: Se a mensagem foi enviada pelo Bot (contém a assinatura dele), ignoramos.
+    if (msg.body.includes('✅ Finance Pro')) return;
 
-    // Delay artificial para parecer digitação humana
-    await new Promise(r => setTimeout(r, 1000));
+    // 2. Filtra mensagens de status ou grupos muito barulhentos se necessário (opcional)
+    // if (msg.isStatus) return;
+
+    // Delay artificial para parecer processamento humano e evitar bloqueio
+    await new Promise(r => setTimeout(r, 2000));
 
     // Áudio
     if (msg.hasMedia && (msg.type === 'audio' || msg.type === 'ptt')) {
-        logger(`Recebendo áudio de ${msg.from}...`);
+        logger(`🎧 Áudio detectado no chat de: ${msg.to}`); // msg.to é você mesmo quando manda msg pra vc
         try {
             const media = await msg.downloadMedia();
             const feedback = await processInput("", true, media.data, media.mimetype);
             await msg.reply(feedback);
         } catch (err) {
             logger('Falha ao processar áudio: ' + err);
-            await msg.reply("Não consegui processar seu áudio desta vez.");
         }
     } 
     // Texto
-    else if (msg.body) {
-        logger(`Recebendo texto de ${msg.from}: "${msg.body.slice(0, 30)}..."`);
+    else if (msg.body && !msg.isStatus) {
+        // Log para ver o que está chegando
+        logger(`📝 Texto detectado: "${msg.body.slice(0, 20)}..."`);
+        
+        // Opcional: Só responder se for no chat "Comigo mesmo" ou se tiver um comando específico
+        // Mas vamos deixar responder tudo por enquanto para facilitar o teste
         const feedback = await processInput(msg.body);
         await msg.reply(feedback);
     }

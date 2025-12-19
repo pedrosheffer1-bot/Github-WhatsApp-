@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Transaction } from "./types";
 
@@ -33,7 +34,14 @@ export class FinanceAIService {
   private model = 'gemini-3-pro-preview';
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // Suporte híbrido: VITE_API_KEY para Netlify/Frontend e API_KEY para Backend/Node
+    const apiKey = import.meta.env?.VITE_API_KEY || process.env.API_KEY;
+    
+    if (!apiKey) {
+      console.warn("API Key não encontrada. Configure VITE_API_KEY no Netlify.");
+    }
+    
+    this.ai = new GoogleGenAI({ apiKey: apiKey || '' });
   }
 
   async processMessage(userMessage: string, history: Transaction[]): Promise<{ text: string, data?: Transaction }> {
