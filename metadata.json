@@ -1,0 +1,7 @@
+{
+  "name": "Finance Pro AI - Executive Expense Tracker",
+  "description": "A luxurious, AI-powered financial companion that converts informal WhatsApp-style messages into structured financial data and actionable insights.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    /**
+     * REGRA GLOBAL: SEGURANÇA POR PADRÃO
+     * Bloqueia qualquer acesso que não tenha uma regra específica definida abaixo.
+     */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    /**
+     * COLEÇÃO: TRANSAÇÕES (Finance Pro / Other Eyes)
+     * Gerencia os registros de entradas e saídas.
+     */
+    match /transactions/{transactionId} {
+      
+      /**
+       * 1. LEITURA PRIVADA
+       * O usuário só pode ler o documento se estiver autenticado e se o userId
+       * gravado no documento for idêntico ao seu UID do Firebase Auth.
+       */
+      allow read: if request.auth != null && 
+                  resource.data.userId == request.auth.uid;
+
+      /**
+       * 2. BLOQUEIO DE ESCRITA VIA FRONTEND
+       * Bloqueamos explicitamente 'create', 'update' e 'delete'.
+       * Isso impede fraudes e garante que apenas o Bot (via Service Account) 
+       * possa inserir dados após a validação da IA.
+       */
+      allow write: if false;
+
+      /**
+       * 3. VALIDAÇÃO DE ESQUEMA
+       * Embora o write esteja como 'false' para o cliente, a lógica de validação 
+       * esperada no backend para o campo 'valor' é:
+       * - Deve ser do tipo 'number'
+       * - Deve ser maior que 0
+       */
+      function isValidTransaction() {
+        return request.resource.data.valor is number && 
+               request.resource.data.valor > 0;
+      }
+    }
+    
+    /**
+     * COLEÇÃO: PERFIS DE USUÁRIO
+     */
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+  }
+}

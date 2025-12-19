@@ -1,0 +1,15 @@
+
+version: '3.8'
+services:
+  finance-pro-bot:
+    build: .
+    container_name: finance-pro-ai
+    restart: always
+    env_file: .env
+    volumes:
+      - ./.wwebjs_auth:/app/.wwebjs_auth
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
